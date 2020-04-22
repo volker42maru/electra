@@ -49,8 +49,10 @@ class PretrainingModel(object):
       self._bert_config.num_attention_heads = 4
 
     # Mask the input
-    masked_inputs = pretrain_helpers.mask(
-        config, pretrain_data.features_to_inputs(features), config.mask_prob)
+    # masked_inputs = pretrain_helpers.mask(
+    #     config, pretrain_data.features_to_inputs(features), config.mask_prob)
+    masked_inputs = pretrain_helpers.mask(config, pretrain_helpers.unmask(pretrain_data.features_to_inputs(features)),
+                                          config.mask_prob)
 
     # Generator
     embedding_size = (
