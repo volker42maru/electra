@@ -44,7 +44,9 @@ def get_input_fn(config: configure_pretraining.PretrainingConfig, is_training,
     name_to_features = {
         "input_ids": tf.io.FixedLenFeature([config.max_seq_length], tf.int64),
         "input_mask": tf.io.FixedLenFeature([config.max_seq_length], tf.int64),
-        "segment_ids": tf.io.FixedLenFeature([config.max_seq_length], tf.int64),
+        "masked_lm_positions ": tf.io.FixedLenFeature([config.max_seq_length], tf.int64),
+        "masked_lm_ids ": tf.io.FixedLenFeature([config.max_seq_length], tf.int64),
+        "masked_lm_weights ": tf.io.FixedLenFeature([config.max_seq_length], tf.int64),
     }
 
     d = tf.data.Dataset.from_tensor_slices(tf.constant(input_files))
