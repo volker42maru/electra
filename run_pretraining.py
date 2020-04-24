@@ -51,7 +51,7 @@ class PretrainingModel(object):
     # Mask the input
     # masked_inputs = pretrain_helpers.mask(
     #     config, pretrain_data.features_to_inputs(features), config.mask_prob)
-    tf.logging.info(f"features to inputs: {pretrain_data.features_to_inputs(features)}")
+    tf.logging.error(f"features to inputs: {pretrain_data.features_to_inputs(features)}")
     masked_inputs = pretrain_helpers.mask(config, pretrain_helpers.unmask(pretrain_data.features_to_inputs(features)),
                                           config.mask_prob)
 
