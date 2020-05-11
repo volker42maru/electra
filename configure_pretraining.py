@@ -95,6 +95,8 @@ class PretrainingConfig(object):
     self.results_txt = os.path.join(results_dir, "unsup_results.txt")
     self.results_pkl = os.path.join(results_dir, "unsup_results.pkl")
 
+    self.init_checkpoint = None
+
     # update defaults with passed-in hyperparameters
     self.update(kwargs)
 
