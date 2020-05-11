@@ -90,6 +90,22 @@ class PretrainingModel(object):
                 fake_data.inputs, discriminator, fake_data.is_fake_tokens)
             self.total_loss += config.disc_weight * disc_output.loss
 
+        tvars = tf.trainable_variables()
+        initialized_variable_names = {}
+        scaffold_fn = None
+        if config.init_checkpoint:
+            (assignment_map, initialized_variable_names
+             ) = modeling.get_assignment_map_from_checkpoint(tvars, config.init_checkpoint)
+            if config.use_tpu:
+
+                def tpu_scaffold():
+                    tf.train.init_from_checkpoint(config.init_checkpoint, assignment_map)
+                    return tf.train.Scaffold()
+
+                scaffold_fn = tpu_scaffold
+            else:
+                tf.train.init_from_checkpoint(config.init_checkpoint, assignment_map)
+
         # Evaluation
         eval_fn_inputs = {
             "input_ids": masked_inputs.input_ids,
@@ -141,9 +157,10 @@ class PretrainingModel(object):
                     metrics["disc_recall"] = tf.metrics.accuracy(
                         labels=d["disc_labels"], predictions=d["disc_preds"],
                         weights=d["disc_labels"] * d["input_mask"])
-            return metrics
+            return metrics, scaffold_fn
 
         self.eval_metrics = (metric_fn, eval_fn_values)
+
 
     def _get_masked_lm_output(self, inputs: pretrain_data.Inputs, model):
         """Masked language modeling softmax layer."""
@@ -275,7 +292,7 @@ def model_fn_builder(config: configure_pretraining.PretrainingConfig):
 
     def model_fn(features, labels, mode, params):
         """Build the model for training."""
-        model = PretrainingModel(config, features,
+        model, scaffold_fn = PretrainingModel(config, features,
                                  mode == tf.estimator.ModeKeys.TRAIN)
         utils.log("Model is built!")
         if mode == tf.estimator.ModeKeys.TRAIN:
@@ -293,7 +310,8 @@ def model_fn_builder(config: configure_pretraining.PretrainingConfig):
                 training_hooks=[training_utils.ETAHook(
                     {} if config.use_tpu else dict(loss=model.total_loss),
                     config.num_train_steps, config.iterations_per_loop,
-                    config.use_tpu)]
+                    config.use_tpu)],
+                scaffold_fn=scaffold_fn
             )
         elif mode == tf.estimator.ModeKeys.EVAL:
             output_spec = tf.estimator.tpu.TPUEstimatorSpec(
@@ -320,11 +338,11 @@ def train_or_eval(config: configure_pretraining.PretrainingConfig):
     utils.heading("Config:")
     utils.log_config(config)
 
-    warm_start_settings = None
-    if config.init_checkpoint:
-        from tensorflow.python.estimator.estimator import WarmStartSettings
-        warm_start_settings = WarmStartSettings(ckpt_to_initialize_from=config.init_checkpoint,
-                                                vars_to_warm_start=['^(?!.*global_step.*)(?!.*adam.*)(?!.*Adam.*).*$'])
+    # warm_start_settings = None
+    # if config.init_checkpoint:
+    #     from tensorflow.python.estimator.estimator import WarmStartSettings
+    #     warm_start_settings = WarmStartSettings(ckpt_to_initialize_from=config.init_checkpoint,
+    #                                             vars_to_warm_start=['^(?!.*global_step.*)(?!.*adam.*)(?!.*Adam.*).*$'])
 
     is_per_host = tf.estimator.tpu.InputPipelineConfig.PER_HOST_V2
     tpu_cluster_resolver = None
