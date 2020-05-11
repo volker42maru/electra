@@ -365,8 +365,7 @@ def train_or_eval(config: configure_pretraining.PretrainingConfig):
         model_fn=model_fn,
         config=run_config,
         train_batch_size=config.train_batch_size,
-        eval_batch_size=config.eval_batch_size,
-        warm_start_from=warm_start_settings)
+        eval_batch_size=config.eval_batch_size)
 
     if config.do_train:
         utils.heading("Running training")
