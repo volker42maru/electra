@@ -92,7 +92,7 @@ class PretrainingModel(object):
 
         tvars = tf.trainable_variables()
         initialized_variable_names = {}
-        scaffold_fn = None
+        self.scaffold_fn = None
         if config.init_checkpoint:
             (assignment_map, initialized_variable_names
              ) = modeling.get_assignment_map_from_checkpoint(tvars, config.init_checkpoint)
@@ -102,7 +102,7 @@ class PretrainingModel(object):
                     tf.train.init_from_checkpoint(config.init_checkpoint, assignment_map)
                     return tf.train.Scaffold()
 
-                scaffold_fn = tpu_scaffold
+                self.scaffold_fn = tpu_scaffold
             else:
                 tf.train.init_from_checkpoint(config.init_checkpoint, assignment_map)
 
@@ -292,7 +292,7 @@ def model_fn_builder(config: configure_pretraining.PretrainingConfig):
 
     def model_fn(features, labels, mode, params):
         """Build the model for training."""
-        model, scaffold_fn = PretrainingModel(config, features,
+        model = PretrainingModel(config, features,
                                  mode == tf.estimator.ModeKeys.TRAIN)
         utils.log("Model is built!")
         if mode == tf.estimator.ModeKeys.TRAIN:
@@ -311,7 +311,7 @@ def model_fn_builder(config: configure_pretraining.PretrainingConfig):
                     {} if config.use_tpu else dict(loss=model.total_loss),
                     config.num_train_steps, config.iterations_per_loop,
                     config.use_tpu)],
-                scaffold_fn=scaffold_fn
+                scaffold_fn=model.scaffold_fn
             )
         elif mode == tf.estimator.ModeKeys.EVAL:
             output_spec = tf.estimator.tpu.TPUEstimatorSpec(
