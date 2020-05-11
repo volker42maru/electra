@@ -321,7 +321,9 @@ def model_fn_builder(config: configure_pretraining.PretrainingConfig):
                 evaluation_hooks=[training_utils.ETAHook(
                     {} if config.use_tpu else dict(loss=model.total_loss),
                     config.num_eval_steps, config.iterations_per_loop,
-                    config.use_tpu, is_training=False)])
+                    config.use_tpu, is_training=False)],
+                scaffold_fn=model.scaffold_fn
+            )
         else:
             raise ValueError("Only TRAIN and EVAL modes are supported")
         return output_spec
